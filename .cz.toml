@@ -1,0 +1,10 @@
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+version_scheme = "semver2"
+version_files = ["VERSION"]
+tag_format = "v$version"
+annotated_tag = true
+update_changelog_on_bump = true
+major_version_zero = true
+bump_message = "chore(release): v$current_version to v$new_version"

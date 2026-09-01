@@ -1,0 +1,18 @@
+; Engine configuration file.
+; Edit this file through the Godot editor when possible.
+
+config_version=5
+
+[application]
+
+config/name="gd-promise Development"
+config/features=PackedStringArray("4.7")
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
