@@ -1,7 +1,25 @@
 @tool
 class_name GdPromise extends RefCounted
-
-## Promise for GDScript with `then`, `catch`, and awaitable settlement.
+## Promise for GDScript.
+##
+## A promise settles once, with a resolved value or a rejection reason.
+## Create one with an executor callable that receives
+## [code skip-lint]resolve[/code] and [code skip-lint]reject[/code] callables:
+## [codeblock]
+## var loaded := GdPromise.new(func(resolve: Callable, reject: Callable):
+##     var result := await load_level()
+##     if result.ok:
+##         resolve.call(result.level)
+##     else:
+##         reject.call(result.error)
+## )
+## var level = await loaded.await_resolved()
+## [/codeblock]
+## Chain work with [method then] and [method catch], combine promises with
+## [method all] and [method race], and wrap callables and signals with
+## [method to_promise]. Settled promises are safe to await again.
+##
+## @tutorial(Promises): https://rafaelvidaurre.github.io/godular/guide/promises.html
 
 ## Emitted when the promise resolves.
 signal resolved(value: Variant)
@@ -10,9 +28,11 @@ signal rejected(reason: Variant)
 ## Emitted when the promise settles with either outcome.
 signal settled(state: Status, value_or_reason: Variant)
 
-## Default rejection reason for `timeout()`.
+## Default rejection reason of [method timeout].
 const ERR_TIMEOUT = &"timeout"
-## Settlement chains deeper than this emit deferred to protect the stack.
+## Maximum depth of nested settlements handled in one call stack. Deeper
+## settlements are emitted with [code]call_deferred()[/code] to protect the
+## stack.
 const MAX_SYNC_SETTLEMENT_DEPTH := 8
 
 static var _id_counter: int = 0
@@ -20,8 +40,11 @@ static var _settlement_emit_depth: int = 0
 
 ## Promise lifecycle states.
 enum Status {
+	## The promise has not settled.
 	PENDING,
+	## The promise resolved with a value.
 	RESOLVED,
+	## The promise rejected with a reason.
 	REJECTED,
 }
 
@@ -42,7 +65,7 @@ var is_rejected: bool:
 var status: Status:
 	get:
 		return _status
-## Alias of `value`.
+## Alias of [member value].
 var result: Variant:
 	get:
 		return value
@@ -51,7 +74,7 @@ var value: Variant:
 	get:
 		return _value
 
-## Unique identifier of the promise instance.
+## Sequence number of the promise instance.
 var id: int = _id_counter
 var _status := Status.PENDING
 var _value: Variant = null
@@ -61,13 +84,19 @@ func _to_string() -> String:
 	return "GdPromise(%s:%s)" % [id, Status.keys()[_status]]
 
 
+## Creates a promise and calls [param callback] with the
+## [code skip-lint]resolve[/code] and [code skip-lint]reject[/code] callables. The callback can [code]await[/code].
+## Without a callback the promise resolves with [code]null[/code].
 func _init(callback: Callable = func(resolve, _reject): resolve.call(null)) -> void:
 	GdPromise._track_promise(self)
 	callback.bind(_resolve, _reject).call()
 	_id_counter += 1
 
 
-## Chains a callback that runs with the resolved value. Returns a new promise.
+## Returns a new promise that resolves with the return value of
+## [param on_fulfilled], called with the resolved value. When the callback
+## returns a promise, the new promise follows it. A rejection skips the
+## callback and rejects the new promise with the same reason.
 func then(on_fulfilled: Callable) -> GdPromise:
 	if is_rejected:
 		return GdPromise.new_rejected(_value)
@@ -75,7 +104,13 @@ func then(on_fulfilled: Callable) -> GdPromise:
 	return _create_promise_from_then_callback(on_fulfilled)
 
 
-## Chains a callback that runs with the rejection reason. Returns a new promise.
+## Returns a new promise. When this promise rejects, [param callback] runs
+## with the reason and the new promise rejects with the return value of the
+## callback. When the callback returns a promise, the new promise follows
+## it. When this promise resolves, the new promise resolves with the same
+## value.
+## [b]Note:[/b] Unlike JavaScript, [method catch] does not recover the
+## chain into a resolved state.
 func catch(callback: Callable) -> GdPromise:
 	if is_resolved:
 		return GdPromise.new_resolved(_value)
@@ -83,7 +118,9 @@ func catch(callback: Callable) -> GdPromise:
 	return _create_promise_from_catch_callback(callback)
 
 
-## Runs a callback regardless of the outcome and returns self.
+## Calls [param callback] at once, awaits it, and returns this promise.
+## The method does not wait for settlement. The return value of the
+## callback is ignored, with a warning when it is not [code]null[/code].
 func finally(callback: Callable) -> GdPromise:
 	var callback_result = await callback.call()
 
@@ -93,7 +130,8 @@ func finally(callback: Callable) -> GdPromise:
 	return self
 
 
-## Awaits resolution and returns the resolved value.
+## Waits until the promise resolves and returns the value. A rejected
+## promise never returns from this method.
 func await_resolved() -> Variant:
 	if _status == Status.RESOLVED:
 		return _value
@@ -101,7 +139,7 @@ func await_resolved() -> Variant:
 	return await resolved
 
 
-## Awaits settlement with either outcome.
+## Waits until the promise settles with either outcome.
 func await_settled() -> void:
 	if _status != Status.PENDING:
 		return
@@ -109,7 +147,8 @@ func await_settled() -> void:
 	await settled
 
 
-## Awaits rejection and returns the rejection reason.
+## Waits until the promise rejects and returns the reason. A resolved
+## promise never returns from this method.
 func await_rejected() -> Variant:
 	if _status == Status.REJECTED:
 		return _value
@@ -117,27 +156,27 @@ func await_rejected() -> Variant:
 	return await rejected
 
 
-## Alias of `await_resolved()`.
+## Alias of [method await_resolved].
 func await_then() -> Variant:
 	return await await_resolved()
 
 
-## Alias of `await_rejected()`.
+## Alias of [method await_rejected].
 func await_catch() -> Variant:
 	return await await_rejected()
 
 
-## Alias of `await_settled()`.
+## Alias of [method await_settled].
 func await_finally() -> void:
 	await await_settled()
 
 
-## Resolves the promise with a value. Does nothing after settlement.
+## Resolves the promise with [param value_]. Does nothing after settlement.
 func resolve(value_: Variant = null) -> void:
 	_resolve(value_)
 
 
-## Rejects the promise with a reason. Does nothing after settlement.
+## Rejects the promise with [param reason]. Does nothing after settlement.
 func reject(reason: Variant = null) -> void:
 	_reject(reason)
 
@@ -272,17 +311,20 @@ func _on_resolved_within_callback(
 	resolve_.call(callback_result)
 
 
-## Creates a promise already resolved with a value.
+## Creates a promise resolved with [param value_].
 static func new_resolved(value_: Variant = null) -> GdPromise:
 	return GdPromise.new(func(resolve_, _reject): resolve_.call(value_))
 
 
-## Creates a promise already rejected with a reason.
+## Creates a promise rejected with [param reason].
 static func new_rejected(reason: Variant = null) -> GdPromise:
 	return GdPromise.new(func(_resolve, reject_): reject_.call(reason))
 
 
-## Resolves with all results in order, or rejects with the first reason.
+## Returns a promise that resolves with an array of the results of
+## [param promises], in the same order, once all of them resolve. It
+## rejects with the first rejection reason. An empty array resolves with an
+## empty array.
 static func all(promises: Array) -> GdPromise:
 	return GdPromise.new(func(resolve_, reject_):
 		if promises.is_empty():
@@ -330,7 +372,8 @@ static func all(promises: Array) -> GdPromise:
 	)
 
 
-## Settles with the outcome of the first promise that settles.
+## Returns a promise that settles with the outcome of the first promise in
+## [param promises] that settles. An empty array never settles.
 static func race(promises: Array) -> GdPromise:
 	return GdPromise.new(func(resolve_, reject_):
 		if promises.is_empty():
@@ -368,7 +411,7 @@ static func race(promises: Array) -> GdPromise:
 	)
 
 
-## Resolves after the given number of seconds.
+## Returns a promise that resolves after [param duration] seconds.
 static func sleep(duration: float) -> GdPromise:
 	return GdPromise.new(func(resolve_, _reject):
 		await (Engine.get_main_loop() as SceneTree).create_timer(duration).timeout
@@ -376,7 +419,8 @@ static func sleep(duration: float) -> GdPromise:
 	)
 
 
-## Rejects after the given number of seconds.
+## Returns a promise that rejects with [param reason] after
+## [param duration] seconds.
 static func timeout(duration: float, reason: Variant = ERR_TIMEOUT) -> GdPromise:
 	return GdPromise.new(func(_resolve, reject_):
 		await Engine.get_main_loop().root.get_tree().create_timer(duration).timeout
@@ -384,7 +428,10 @@ static func timeout(duration: float, reason: Variant = ERR_TIMEOUT) -> GdPromise
 	)
 
 
-## Wraps a callable, signal, promise, or plain value in a promise.
+## Returns a promise for [param thing]. A callable is called and the
+## promise resolves with its awaited return value. A signal resolves the
+## promise with its next emission. A promise is returned as is. Any other
+## value becomes a resolved promise.
 static func to_promise(thing: Variant) -> GdPromise:
 	if thing is Callable:
 		return GdPromise._callable_to_promise(thing)
@@ -398,7 +445,9 @@ static func to_promise(thing: Variant) -> GdPromise:
 	return GdPromise.new_resolved(thing)
 
 
-## Resolves on the success signal or rejects on the failure signal.
+## Returns a promise that resolves with the first emission of
+## [param success_signal] or rejects with the first emission of
+## [param failure_signal]. Both signals must emit exactly one argument.
 static func from_signals(success_signal: Signal, failure_signal: Signal = Signal()) -> GdPromise:
 	return GdPromise.new(func(resolve_, reject_):
 		success_signal.connect(func(value_: Variant):

@@ -5,4 +5,4 @@ Do not edit these files by hand.
 
 ## GdPromise
 
-- [GdPromise](GdPromise.md) — Promise for GDScript with `then`, `catch`, and awaitable settlement.
+- [GdPromise](GdPromise.md) — Promise for GDScript.
