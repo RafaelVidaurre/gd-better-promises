@@ -5,4 +5,4 @@ Do not edit these files by hand.
 
 ## GdbPromise
 
-- [GdbPromise](GdbPromise.md) — Promise for GDScript with `then`, `catch`, and awaitable settlement.
+- [GdbPromise](GdbPromise.md) — Promise for GDScript.
