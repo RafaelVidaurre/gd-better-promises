@@ -1,4 +1,4 @@
-# GdPromise
+# GdbPromise
 
 Inherits: `RefCounted`
 
@@ -65,15 +65,15 @@ Unique identifier of the promise instance.
 
 ### `func _init(callback: Callable = <anonymous lambda>) -> void`
 
-### `func then(on_fulfilled: Callable) -> GdPromise`
+### `func then(on_fulfilled: Callable) -> GdbPromise`
 
 Chains a callback that runs with the resolved value. Returns a new promise.
 
-### `func catch(callback: Callable) -> GdPromise`
+### `func catch(callback: Callable) -> GdbPromise`
 
 Chains a callback that runs with the rejection reason. Returns a new promise.
 
-### `func finally(callback: Callable) -> GdPromise`
+### `func finally(callback: Callable) -> GdbPromise`
 
 Runs a callback regardless of the outcome and returns self.
 
@@ -109,34 +109,34 @@ Resolves the promise with a value. Does nothing after settlement.
 
 Rejects the promise with a reason. Does nothing after settlement.
 
-### `static func new_resolved(value_: Variant = null) -> GdPromise`
+### `static func new_resolved(value_: Variant = null) -> GdbPromise`
 
 Creates a promise already resolved with a value.
 
-### `static func new_rejected(reason: Variant = null) -> GdPromise`
+### `static func new_rejected(reason: Variant = null) -> GdbPromise`
 
 Creates a promise already rejected with a reason.
 
-### `static func all(promises: Array) -> GdPromise`
+### `static func all(promises: Array) -> GdbPromise`
 
 Resolves with all results in order, or rejects with the first reason.
 
-### `static func race(promises: Array) -> GdPromise`
+### `static func race(promises: Array) -> GdbPromise`
 
 Settles with the outcome of the first promise that settles.
 
-### `static func sleep(duration: float) -> GdPromise`
+### `static func sleep(duration: float) -> GdbPromise`
 
 Resolves after the given number of seconds.
 
-### `static func timeout(duration: float, reason: Variant = &"timeout") -> GdPromise`
+### `static func timeout(duration: float, reason: Variant = &"timeout") -> GdbPromise`
 
 Rejects after the given number of seconds.
 
-### `static func to_promise(thing: Variant) -> GdPromise`
+### `static func to_promise(thing: Variant) -> GdbPromise`
 
 Wraps a callable, signal, promise, or plain value in a promise.
 
-### `static func from_signals(success_signal: Signal, failure_signal: Signal = Signal()) -> GdPromise`
+### `static func from_signals(success_signal: Signal, failure_signal: Signal = Signal()) -> GdbPromise`
 
 Resolves on the success signal or rejects on the failure signal.

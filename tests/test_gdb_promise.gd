@@ -9,7 +9,7 @@ class SignalEmitter extends RefCounted:
 
 
 func test_default_constructor_resolves_with_null() -> void:
-	var promise := GdPromise.new()
+	var promise := GdbPromise.new()
 
 	assert_true(promise.is_resolved)
 	assert_null(promise.value)
@@ -18,7 +18,7 @@ func test_default_constructor_resolves_with_null() -> void:
 func test_constructor_calls_executor_synchronously() -> void:
 	var data := {"called": false}
 
-	var promise := GdPromise.new(func(_resolve, _reject) -> void:
+	var promise := GdbPromise.new(func(_resolve, _reject) -> void:
 		data.called = true
 	)
 
@@ -30,7 +30,7 @@ func test_constructor_calls_executor_synchronously() -> void:
 func test_pending_state_and_public_properties() -> void:
 	var promise := _new_pending()
 
-	assert_eq(promise.status, GdPromise.Status.PENDING)
+	assert_eq(promise.status, GdbPromise.Status.PENDING)
 	assert_false(promise.is_settled)
 	assert_false(promise.is_resolved)
 	assert_false(promise.is_rejected)
@@ -43,7 +43,7 @@ func test_resolve_sets_state_and_emits_signals_in_order() -> void:
 	var promise := _new_pending()
 	var events: Array = []
 
-	promise.settled.connect(func(state: GdPromise.Status, value: Variant) -> void:
+	promise.settled.connect(func(state: GdbPromise.Status, value: Variant) -> void:
 		events.append(["settled", state, value])
 	)
 	promise.resolved.connect(func(value: Variant) -> void:
@@ -55,11 +55,11 @@ func test_resolve_sets_state_and_emits_signals_in_order() -> void:
 	assert_true(promise.is_settled)
 	assert_true(promise.is_resolved)
 	assert_false(promise.is_rejected)
-	assert_eq(promise.status, GdPromise.Status.RESOLVED)
+	assert_eq(promise.status, GdbPromise.Status.RESOLVED)
 	assert_eq(promise.value, "value")
 	assert_eq(promise.result, "value")
 	assert_eq(events, [
-		["settled", GdPromise.Status.RESOLVED, "value"],
+		["settled", GdbPromise.Status.RESOLVED, "value"],
 		["resolved", "value"],
 	])
 
@@ -68,7 +68,7 @@ func test_reject_sets_state_and_emits_signals_in_order() -> void:
 	var promise := _new_pending()
 	var events: Array = []
 
-	promise.settled.connect(func(state: GdPromise.Status, reason: Variant) -> void:
+	promise.settled.connect(func(state: GdbPromise.Status, reason: Variant) -> void:
 		events.append(["settled", state, reason])
 	)
 	promise.rejected.connect(func(reason: Variant) -> void:
@@ -80,11 +80,11 @@ func test_reject_sets_state_and_emits_signals_in_order() -> void:
 	assert_true(promise.is_settled)
 	assert_false(promise.is_resolved)
 	assert_true(promise.is_rejected)
-	assert_eq(promise.status, GdPromise.Status.REJECTED)
+	assert_eq(promise.status, GdbPromise.Status.REJECTED)
 	assert_eq(promise.value, "reason")
 	assert_eq(promise.result, "reason")
 	assert_eq(events, [
-		["settled", GdPromise.Status.REJECTED, "reason"],
+		["settled", GdbPromise.Status.REJECTED, "reason"],
 		["rejected", "reason"],
 	])
 
@@ -120,16 +120,16 @@ func test_resolve_and_reject_default_to_null() -> void:
 
 
 func test_ids_are_unique_and_to_string_uses_public_name_and_state() -> void:
-	var first := GdPromise.new_resolved()
-	var second := GdPromise.new_rejected()
+	var first := GdbPromise.new_resolved()
+	var second := GdbPromise.new_rejected()
 
 	assert_ne(first.id, second.id)
-	assert_eq(str(first), "GdPromise(%s:RESOLVED)" % first.id)
-	assert_eq(str(second), "GdPromise(%s:REJECTED)" % second.id)
+	assert_eq(str(first), "GdbPromise(%s:RESOLVED)" % first.id)
+	assert_eq(str(second), "GdbPromise(%s:REJECTED)" % second.id)
 
 
 func test_asynchronous_executor_settles_later() -> void:
-	var promise := GdPromise.new(func(resolve, _reject) -> void:
+	var promise := GdbPromise.new(func(resolve, _reject) -> void:
 		await get_tree().process_frame
 		resolve.call("later")
 	)
@@ -152,15 +152,15 @@ func test_unowned_asynchronous_promise_stays_alive_until_settlement() -> void:
 
 
 func test_await_methods_return_observed_values() -> void:
-	var resolved := GdPromise.new(func(resolve, _reject) -> void:
+	var resolved := GdbPromise.new(func(resolve, _reject) -> void:
 		await get_tree().process_frame
 		resolve.call("resolved")
 	)
-	var rejected := GdPromise.new(func(_resolve, reject) -> void:
+	var rejected := GdbPromise.new(func(_resolve, reject) -> void:
 		await get_tree().process_frame
 		reject.call("rejected")
 	)
-	var settled := GdPromise.new(func(resolve, _reject) -> void:
+	var settled := GdbPromise.new(func(resolve, _reject) -> void:
 		await get_tree().process_frame
 		resolve.call("settled")
 	)
@@ -188,7 +188,7 @@ func test_then_transforms_pending_resolution() -> void:
 
 func test_then_on_resolved_promise_runs_in_same_call() -> void:
 	var data := {"called": false}
-	var promise := GdPromise.new_resolved("value")
+	var promise := GdbPromise.new_resolved("value")
 
 	var child := promise.then(func(value: String) -> String:
 		data.called = true
@@ -202,7 +202,7 @@ func test_then_on_resolved_promise_runs_in_same_call() -> void:
 
 func test_then_on_rejected_promise_skips_callback_and_propagates_reason() -> void:
 	var called := false
-	var promise := GdPromise.new_rejected("reason")
+	var promise := GdbPromise.new_rejected("reason")
 
 	var child := promise.then(func(_value: Variant) -> void:
 		called = true
@@ -214,11 +214,11 @@ func test_then_on_rejected_promise_skips_callback_and_propagates_reason() -> voi
 
 
 func test_then_adopts_resolved_and_rejected_promises() -> void:
-	var resolved_child := GdPromise.new_resolved(1).then(func(value: int) -> GdPromise:
-		return GdPromise.new_resolved(value + 1)
+	var resolved_child := GdbPromise.new_resolved(1).then(func(value: int) -> GdbPromise:
+		return GdbPromise.new_resolved(value + 1)
 	)
-	var rejected_child := GdPromise.new_resolved(1).then(func(_value: int) -> GdPromise:
-		return GdPromise.new_rejected("nested")
+	var rejected_child := GdbPromise.new_resolved(1).then(func(_value: int) -> GdbPromise:
+		return GdbPromise.new_rejected("nested")
 	)
 
 	assert_true(resolved_child.is_resolved)
@@ -229,7 +229,7 @@ func test_then_adopts_resolved_and_rejected_promises() -> void:
 
 func test_then_adopts_pending_promise() -> void:
 	var nested := _new_pending()
-	var child := GdPromise.new_resolved().then(func(_value: Variant) -> GdPromise:
+	var child := GdbPromise.new_resolved().then(func(_value: Variant) -> GdbPromise:
 		return nested
 	)
 
@@ -241,7 +241,7 @@ func test_then_adopts_pending_promise() -> void:
 
 
 func test_then_awaits_coroutine_callback() -> void:
-	var child := GdPromise.new_resolved("start").then(func(value: String) -> String:
+	var child := GdbPromise.new_resolved("start").then(func(value: String) -> String:
 		await get_tree().process_frame
 		return value + " end"
 	)
@@ -255,7 +255,7 @@ func test_then_awaits_coroutine_callback() -> void:
 
 func test_catch_on_resolved_promise_skips_callback_and_propagates_value() -> void:
 	var called := false
-	var child := GdPromise.new_resolved("value").catch(func(_reason: Variant) -> void:
+	var child := GdbPromise.new_resolved("value").catch(func(_reason: Variant) -> void:
 		called = true
 	)
 
@@ -265,7 +265,7 @@ func test_catch_on_resolved_promise_skips_callback_and_propagates_value() -> voi
 
 
 func test_catch_non_promise_return_becomes_rejection_reason() -> void:
-	var child := GdPromise.new_rejected("original").catch(func(reason: String) -> String:
+	var child := GdbPromise.new_rejected("original").catch(func(reason: String) -> String:
 		return "handled %s" % reason
 	)
 
@@ -274,13 +274,13 @@ func test_catch_non_promise_return_becomes_rejection_reason() -> void:
 
 
 func test_catch_adopts_returned_promises() -> void:
-	var resolved_child := GdPromise.new_rejected("original").catch(
-		func(_reason: String) -> GdPromise:
-			return GdPromise.new_resolved("recovered")
+	var resolved_child := GdbPromise.new_rejected("original").catch(
+		func(_reason: String) -> GdbPromise:
+			return GdbPromise.new_resolved("recovered")
 	)
-	var rejected_child := GdPromise.new_rejected("original").catch(
-		func(_reason: String) -> GdPromise:
-			return GdPromise.new_rejected("replacement")
+	var rejected_child := GdbPromise.new_rejected("original").catch(
+		func(_reason: String) -> GdbPromise:
+			return GdbPromise.new_rejected("replacement")
 	)
 
 	assert_true(resolved_child.is_resolved)
@@ -319,7 +319,7 @@ func test_finally_runs_immediately_and_returns_original_promise() -> void:
 
 
 func test_all_empty_resolves_with_empty_array() -> void:
-	var promise := GdPromise.all([])
+	var promise := GdbPromise.all([])
 
 	assert_true(promise.is_resolved)
 	assert_eq(promise.value, [])
@@ -328,9 +328,9 @@ func test_all_empty_resolves_with_empty_array() -> void:
 func test_all_preserves_order_for_mixed_pending_and_resolved_promises() -> void:
 	var first := _new_pending()
 	var third := _new_pending()
-	var combined := GdPromise.all([
+	var combined := GdbPromise.all([
 		first,
-		GdPromise.new_resolved("second"),
+		GdbPromise.new_resolved("second"),
 		third,
 	])
 
@@ -345,7 +345,7 @@ func test_all_preserves_order_for_mixed_pending_and_resolved_promises() -> void:
 func test_all_rejects_with_first_observed_rejection() -> void:
 	var first := _new_pending()
 	var second := _new_pending()
-	var combined := GdPromise.all([first, second])
+	var combined := GdbPromise.all([first, second])
 
 	second.reject("second")
 	first.reject("first")
@@ -356,9 +356,9 @@ func test_all_rejects_with_first_observed_rejection() -> void:
 
 func test_all_detects_already_rejected_input() -> void:
 	var pending := _new_pending()
-	var combined := GdPromise.all([
-		GdPromise.new_resolved(1),
-		GdPromise.new_rejected("reason"),
+	var combined := GdbPromise.all([
+		GdbPromise.new_resolved(1),
+		GdbPromise.new_rejected("reason"),
 		pending,
 	])
 
@@ -368,7 +368,7 @@ func test_all_detects_already_rejected_input() -> void:
 
 
 func test_race_empty_remains_pending() -> void:
-	var race_promise := GdPromise.race([])
+	var race_promise := GdbPromise.race([])
 
 	await get_tree().process_frame
 	assert_false(race_promise.is_settled)
@@ -376,13 +376,13 @@ func test_race_empty_remains_pending() -> void:
 
 
 func test_race_uses_first_already_settled_input_in_array_order() -> void:
-	var resolved_race := GdPromise.race([
-		GdPromise.new_resolved("first"),
-		GdPromise.new_resolved("second"),
+	var resolved_race := GdbPromise.race([
+		GdbPromise.new_resolved("first"),
+		GdbPromise.new_resolved("second"),
 	])
-	var rejected_race := GdPromise.race([
-		GdPromise.new_rejected("first"),
-		GdPromise.new_resolved("second"),
+	var rejected_race := GdbPromise.race([
+		GdbPromise.new_rejected("first"),
+		GdbPromise.new_resolved("second"),
 	])
 
 	assert_true(resolved_race.is_resolved)
@@ -394,7 +394,7 @@ func test_race_uses_first_already_settled_input_in_array_order() -> void:
 func test_race_uses_first_later_settlement() -> void:
 	var first := _new_pending()
 	var second := _new_pending()
-	var race_promise := GdPromise.race([first, second])
+	var race_promise := GdbPromise.race([first, second])
 
 	second.reject("second")
 	first.resolve("first")
@@ -404,18 +404,18 @@ func test_race_uses_first_later_settlement() -> void:
 
 
 func test_to_promise_returns_same_promise_and_wraps_plain_values() -> void:
-	var original := GdPromise.new_resolved("value")
+	var original := GdbPromise.new_resolved("value")
 
-	assert_same(GdPromise.to_promise(original), original)
-	assert_eq(GdPromise.to_promise(42).value, 42)
-	assert_null(GdPromise.to_promise(null).value)
+	assert_same(GdbPromise.to_promise(original), original)
+	assert_eq(GdbPromise.to_promise(42).value, 42)
+	assert_null(GdbPromise.to_promise(null).value)
 
 
 func test_to_promise_awaits_sync_and_async_callables() -> void:
-	var sync_promise := GdPromise.to_promise(func() -> int:
+	var sync_promise := GdbPromise.to_promise(func() -> int:
 		return 2
 	)
-	var async_promise := GdPromise.to_promise(func() -> int:
+	var async_promise := GdbPromise.to_promise(func() -> int:
 		await get_tree().process_frame
 		return 3
 	)
@@ -426,8 +426,8 @@ func test_to_promise_awaits_sync_and_async_callables() -> void:
 
 func test_to_promise_awaits_single_and_multiple_argument_signals() -> void:
 	var emitter := SignalEmitter.new()
-	var single := GdPromise.to_promise(emitter.succeeded)
-	var multiple := GdPromise.to_promise(emitter.multiple)
+	var single := GdbPromise.to_promise(emitter.succeeded)
+	var multiple := GdbPromise.to_promise(emitter.multiple)
 
 	emitter.succeeded.emit("value")
 	emitter.multiple.emit("first", "second")
@@ -439,8 +439,8 @@ func test_to_promise_awaits_single_and_multiple_argument_signals() -> void:
 func test_from_signals_resolves_or_rejects() -> void:
 	var success_emitter := SignalEmitter.new()
 	var failure_emitter := SignalEmitter.new()
-	var success := GdPromise.from_signals(success_emitter.succeeded, success_emitter.failed)
-	var failure := GdPromise.from_signals(failure_emitter.succeeded, failure_emitter.failed)
+	var success := GdbPromise.from_signals(success_emitter.succeeded, success_emitter.failed)
+	var failure := GdbPromise.from_signals(failure_emitter.succeeded, failure_emitter.failed)
 
 	success_emitter.succeeded.emit("value")
 	failure_emitter.failed.emit("reason")
@@ -453,7 +453,7 @@ func test_from_signals_resolves_or_rejects() -> void:
 
 func test_from_signals_keeps_first_settlement() -> void:
 	var emitter := SignalEmitter.new()
-	var promise := GdPromise.from_signals(emitter.succeeded, emitter.failed)
+	var promise := GdbPromise.from_signals(emitter.succeeded, emitter.failed)
 
 	emitter.succeeded.emit("value")
 	emitter.failed.emit("reason")
@@ -464,7 +464,7 @@ func test_from_signals_keeps_first_settlement() -> void:
 
 func test_from_signals_argumentless_signal_errors_and_stays_pending() -> void:
 	var emitter := SignalEmitter.new()
-	var promise := GdPromise.from_signals(emitter.no_arguments)
+	var promise := GdbPromise.from_signals(emitter.no_arguments)
 
 	emitter.no_arguments.emit()
 
@@ -474,9 +474,9 @@ func test_from_signals_argumentless_signal_errors_and_stays_pending() -> void:
 
 
 func test_sleep_resolves_and_timeout_rejects() -> void:
-	var sleeping := GdPromise.sleep(0.01)
-	var timing_out := GdPromise.timeout(0.01)
-	var custom_timeout := GdPromise.timeout(0.01, "custom")
+	var sleeping := GdbPromise.sleep(0.01)
+	var timing_out := GdbPromise.timeout(0.01)
+	var custom_timeout := GdbPromise.timeout(0.01, "custom")
 
 	await sleeping.await_settled()
 	await timing_out.await_settled()
@@ -484,7 +484,7 @@ func test_sleep_resolves_and_timeout_rejects() -> void:
 
 	assert_true(sleeping.is_resolved)
 	assert_true(timing_out.is_rejected)
-	assert_eq(timing_out.value, GdPromise.ERR_TIMEOUT)
+	assert_eq(timing_out.value, GdbPromise.ERR_TIMEOUT)
 	assert_true(custom_timeout.is_rejected)
 	assert_eq(custom_timeout.value, "custom")
 
@@ -529,10 +529,10 @@ func test_very_deep_chain_completes_without_stack_overflow() -> void:
 func test_many_already_settled_promises_complete_aggregates() -> void:
 	var promises: Array = []
 	for i in range(40):
-		promises.append(GdPromise.new_resolved(i))
+		promises.append(GdbPromise.new_resolved(i))
 
-	var all_result: Array = await GdPromise.all(promises).await_resolved()
-	var race_result: Variant = await GdPromise.race(promises).await_resolved()
+	var all_result: Array = await GdbPromise.all(promises).await_resolved()
+	var race_result: Variant = await GdbPromise.race(promises).await_resolved()
 
 	assert_eq(all_result.size(), 40)
 	assert_eq(all_result[0], 0)
@@ -540,13 +540,13 @@ func test_many_already_settled_promises_complete_aggregates() -> void:
 	assert_eq(race_result, 0)
 
 
-func _new_pending() -> GdPromise:
-	return GdPromise.new(func(_resolve, _reject) -> void:
+func _new_pending() -> GdbPromise:
+	return GdbPromise.new(func(_resolve, _reject) -> void:
 		pass
 	)
 
 
-func _build_increment_chain(root: GdPromise, length: int) -> GdPromise:
+func _build_increment_chain(root: GdbPromise, length: int) -> GdbPromise:
 	var chain := root
 	for _i in range(length):
 		chain = chain.then(func(value: int) -> int:
@@ -556,7 +556,7 @@ func _build_increment_chain(root: GdPromise, length: int) -> GdPromise:
 
 
 func _start_unowned_async_promise(state: Dictionary) -> void:
-	GdPromise.new(func(resolve, _reject) -> void:
+	GdbPromise.new(func(resolve, _reject) -> void:
 		await get_tree().process_frame
 		state.settled = true
 		resolve.call()

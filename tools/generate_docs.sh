@@ -8,14 +8,14 @@ cd "$repository_root"
 
 xml_root=$(mktemp -d)
 trap 'rm -rf "$xml_root"' EXIT
-mkdir -p "$xml_root/gd_promise"
+mkdir -p "$xml_root/gdb_promise"
 
 # Import the project once so script classes resolve.
 ug exec -- --headless --editor --path . --quit
 
-ug exec -- --headless --path . --doctool "$xml_root/gd_promise" --gdscript-docs res://addons/gd_promise --quit
+ug exec -- --headless --path . --doctool "$xml_root/gdb_promise" --gdscript-docs res://addons/gdb_promise --quit
 
 rm -rf docs/reference
-python3 tools/xml_to_md.py docs/reference "GdPromise=$xml_root/gd_promise"
+python3 tools/xml_to_md.py docs/reference "GdbPromise=$xml_root/gdb_promise"
 
 echo "Wrote docs/reference"
