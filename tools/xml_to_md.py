@@ -47,13 +47,21 @@ class Renderer:
         return "`%s`" % class_name
 
     def bbcode_to_md(self, text: str) -> str:
-        text = "\n".join(line.strip() for line in text.strip().splitlines())
+        lines = []
+        in_codeblock = False
+        for line in text.strip().splitlines():
+            if "[codeblock" in line:
+                in_codeblock = True
+            lines.append(line.rstrip() if in_codeblock else line.strip())
+            if "[/codeblock" in line:
+                in_codeblock = False
+        text = "\n".join(lines)
         text = re.sub(r"\[codeblock(?:s)?(?: lang=\w+)?\]\n?", "\n```gdscript\n", text)
         text = re.sub(r"\n?\[/codeblock(?:s)?\]", "\n```\n", text)
         text = re.sub(r"\[(?:gdscript|csharp)\]\n?|\n?\[/(?:gdscript|csharp)\]", "", text)
         text = text.replace("[b]", "**").replace("[/b]", "**")
         text = text.replace("[i]", "*").replace("[/i]", "*")
-        text = text.replace("[code]", "`").replace("[/code]", "`")
+        text = re.sub(r"\[code(?: [^\]]*)?\]", "`", text).replace("[/code]", "`")
         text = text.replace("[br]", "\n")
         text = re.sub(r"\[(?:param|method|member|signal|constant|enum) ([^\]]+)\]", r"`\1`", text)
         text = re.sub(
